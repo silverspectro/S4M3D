@@ -48,7 +48,7 @@
 	var camMouv;
 	var cam = { z:40 };
 	var camEnd = { z:150 };
-	camMouv = new TWEEN.Tween(cam).to(camEnd, 6000).easing(TWEEN.Elastic.Cubic.In).delay(2000);
+	camMouv = new TWEEN.Tween(cam).to(camEnd, 6000).easing(TWEEN.Easing.Cubic.In).delay(2000);
 
 	camMouv.onUpdate(function(){
 		camera.position.z = cam.z;
