@@ -71,7 +71,7 @@
 	$container.append(renderer.domElement);
 
 	// create the sphere's material
-	var sphereMaterial = new THREE.MeshLambertMaterial({color: 0xffffff, wireframe: true});
+	var sphereMaterial = new THREE.MeshLambertMaterial({wireframe: true});
 
 
 
@@ -126,55 +126,58 @@
 
 //function to Highlight Faces of object, check why it doesn't cahnge the color;
 
-// 	function checkHighlight(){
-// 	// find intersections
-//
-// 	// create a Ray with origin at the mouse position
-// 	//   and direction into the scene (camera direction)
-// 	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
-// 	vector.unproject(camera);
-// 	var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
-//
-// 	// create an array containing all objects in the scene with which the ray intersects
-// 	var intersects = ray.intersectObjects( [sphere] );
-//
-// 	// INTERSECTED = the object in the scene currently closest to the camera
-// 	//		and intersected by the Ray projected from the mouse position
-//
-// 	// if there is one (or more) intersections
-// 	if ( intersects.length > 0 )
-// 	{	// case if mouse is not currently over an object
-// 		if(INTERSECTED==null){
-// 			INTERSECTED = intersects[ 0 ];
-// 			INTERSECTED.face.color.set( 0xffffff );
-// 		}
-// 		else{	// if thse mouse is over an object
-// 			INTERSECTED.face.color.set( 0xffffff );
-// 			INTERSECTED.object.geometry.colorsNeedUpdate = true;
-// 			INTERSECTED = intersects[ 0 ];
-// 			INTERSECTED.face.color.set( Math.random() * 0xffffff );
-// 			console.log(INTERSECTED.face.color.set( 0xffffff ));
-// 		}
-// 		// upsdate mouseSphere coordinates and update colors
-// 		mouseSphereCoords = [INTERSECTED.point.x,INTERSECTED.point.y,INTERSECTED.point.z];
-// 		INTERSECTED.object.geometry.colorsNeedUpdate = true;
-//
-// 	}
-// 	else // there are no intersections
-// 	{
-// 		// restore previous intersection object (if it exists) to its original color
-// 		if ( INTERSECTED ){
-// 			INTERSECTED.face.color.set( 0xffffff );
-// 			INTERSECTED.object.geometry.colorsNeedUpdate = true;
-// 		}
-// 		// remove previous intersection object reference
-// 		//     by setting current intersection object to "nothing"
-//
-// 		INTERSECTED = null;
-// 		mouseSphereCoords = null;
-//
-// 	}
-// }
+	function checkHighlight(){
+	// find intersections
+
+	// create a Ray with origin at the mouse position
+	//   and direction into the scene (camera direction)
+	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+	vector.unproject(camera);
+	var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+	// create an array containing all objects in the scene with which the ray intersects
+	var intersects = ray.intersectObjects( [sphere] );
+
+	// INTERSECTED = the object in the scene currently closest to the camera
+	//		and intersected by the Ray projected from the mouse position
+
+	// if there is one (or more) intersections
+	if ( intersects.length > 0 )
+	{	// case if mouse is not currently over an object
+		if(INTERSECTED==null){
+			INTERSECTED = intersects[ 0 ];
+			INTERSECTED.face.color.set( 0x000000 );
+			//INTERSECTED.object.material.emissive.setHex( 0xff0000 );
+		}
+		else{	// if thse mouse is over an object
+			INTERSECTED.face.color.set( 0xffffff );
+			INTERSECTED.object.geometry.colorsNeedUpdate = true;
+			INTERSECTED = intersects[ 0 ];
+			INTERSECTED.face.color.set( Math.random() * 0xffffff );
+			//INTERSECTED.object.material.emissive.setHex( 0xffffff );
+			console.log(INTERSECTED.object);
+		}
+		// upsdate mouseSphere coordinates and update colors
+		mouseSphereCoords = [INTERSECTED.point.x,INTERSECTED.point.y,INTERSECTED.point.z];
+		INTERSECTED.object.geometry.colorsNeedUpdate = true;
+
+	}
+	else // there are no intersections
+	{
+		// restore previous intersection object (if it exists) to its original color
+		if ( INTERSECTED ){
+			INTERSECTED.face.color.set( 0x000000 );
+			// INTERSECTED.object.material.emissive.setHex( 0xff0000 );
+			INTERSECTED.object.geometry.colorsNeedUpdate = true;
+		}
+		// remove previous intersection object reference
+		//     by setting current intersection object to "nothing"
+
+		INTERSECTED = null;
+		mouseSphereCoords = null;
+
+	}
+}
 
 
 	// run the rendering loop
@@ -191,32 +194,32 @@
 		sphere.rotation.x += 0.005;
 		sphere.rotation.y += 0.005;
 
-		//checkHighlight();
+		checkHighlight();
 
 		//Mouse intersection
-		raycaster.setFromCamera( mouse, camera );
-		var intersects = raycaster.intersectObjects( scene.children );
-
-		if ( intersects.length > 0 ) {
-
-			if ( INTERSECTED != intersects[ 0 ].object ) {
-
-				if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-				INTERSECTED = intersects[0].object;
-				console.log(INTERSECTED);
-				INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-				INTERSECTED.material.emissive.setHex( 0xffffff );	//cahnge color
-
-			}
-
-		} else {
-
-			if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-			INTERSECTED = null;
-
-		}
+		// raycaster.setFromCamera( mouse, camera );
+		// var intersects = raycaster.intersectObjects( scene.children );
+		//
+		// if ( intersects.length > 0 ) {
+		//
+		// 	if ( INTERSECTED != intersects[ 0 ].object ) {
+		//
+		// 		if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+		//
+		// 		INTERSECTED = intersects[0].object;
+		// 		console.log(INTERSECTED);
+		// 		INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+		// 		INTERSECTED.material.emissive.setHex( 0xffffff );	//cahnge color
+		//
+		// 	}
+		//
+		// } else {
+		//
+		// 	if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+		//
+		// 	INTERSECTED = null;
+		//
+		// }
 
 		TWEEN.update();
 
