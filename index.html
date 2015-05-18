@@ -4,6 +4,10 @@
 		<meta charset="utf-8" />
 		<title>Sample Three.js</title>
 		<style>
+			* {
+				margin: 0;
+				padding: 0;
+			}
 			#container {
 				background: #000;
 				width: 1200px;
@@ -12,7 +16,7 @@
 		</style>
 	</head>
 	<body>
-
+		<button id="Anim">Anim</button>
 		<div id="container">
 
 
@@ -21,8 +25,6 @@
 	</body>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
 	<script src="vendor/three.js/build/three.min.js"></script>
-	<script src="vendor/three.js/build/Projector.js"></script>
-	<script src="vendor/three.js\examples\js\controls/OrbitControls.js"></script>
 	<script type="text/javascript" src="vendor/tween.min.js"></script>
 
 	<script type="text/javascript">
@@ -40,29 +42,67 @@
 	// and a scene
 	var renderer = new THREE.WebGLRenderer( { antialias: true } );
 	var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
-	var controls	= new THREE.OrbitControls(camera);
-	var projector = new THREE.Projector();
 	var raycaster = new THREE.Raycaster();
 	var mouse = new THREE.Vector2(), INTERSECTED;
 	var scene = new THREE.Scene();
+	var clicked = false;
+	var animating = false;
 
 	var baseColor = new THREE.Color( 0xffffff );
 
-	var highlightedColor = new THREE.Color( 0x999999 );
+	var mouseDown = false;
+	var rotateStartPoint = new THREE.Vector3(0, 0, 1);
+	var rotateEndPoint = new THREE.Vector3(0, 0, 1);
+
+	var curQuaternion;
+	var windowHalfX = window.innerWidth / 2;
+	var windowHalfY = window.innerHeight / 2;
+	var rotationSpeed = 2;
+	var lastMoveTimestamp,
+		moveReleaseTimeDelta = 50;
+
+	var startPoint = {
+		x: 0,
+		y: 0
+	};
+
+	var deltaX = 0,
+		deltaY = 0;
 
 	// the camera starts at 0,0,0 so pull it back
-	camera.position.z = 40;
+	camera.position.z = 170;
 
-	var camMouv;
+	var camOut, camIn;
 	var cam = { z:40 };
-	var camEnd = { z:150 };
-	camMouv = new TWEEN.Tween(cam).to(camEnd, 6000).easing(TWEEN.Easing.Cubic.In).delay(2000);
-
-	camMouv.onUpdate(function(){
-		camera.position.z = cam.z;
+	var camEnd = { z:170 };
+	camOut = new TWEEN.Tween(cam)
+					.to(camEnd, 6000)
+					.easing(TWEEN.Easing.Sinusoidal.InOut)
+					.onStart(function(){
+						animating = true;
+					})
+					.onComplete(function(){
+						animating = false;
+	});
+	camIn = new TWEEN.Tween(camEnd)
+					.to(cam, 6000)
+					.easing(TWEEN.Easing.Sinusoidal.InOut)
+					.onStart(function(){
+						animating = true;
+					})
+					.onComplete(function(){
+						animating = false;
 	});
 
-	camMouv.start();
+	camIn.onUpdate(function(){
+		animating = true;
+		camera.position.z = camEnd.z;
+	});
+
+	camOut.onUpdate(function(){
+		animating = true;
+		camera.position.z = cam.z;
+	});
 
 	// start the renderer
 	renderer.setSize(WIDTH, HEIGHT);
@@ -72,8 +112,6 @@
 
 	// create the sphere's material
 	var sphereMaterial = new THREE.MeshLambertMaterial({wireframe: true});
-
-
 
 	// create a new mesh with sphere geometry -
 	var dodecahedronGeometry = new THREE.IcosahedronGeometry( 50,0);
@@ -112,72 +150,119 @@
 
   renderer.setClearColor( scene.fog.color, 1 );
 
-	function onMouseMove( event ) {
+	function onMouseDown( event ) {
 
-		// calculate mouse position in normalized device coordinates
-		// (-1 to +1) for both components
 		event.preventDefault();
-		mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-		mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+		cam.z = 40;
+		camEnd.z = 170;
+
+		if(!clicked) {
+		TWEEN.removeAll();
+			if(!animating) {
+				camIn.start();
+				clicked = !clicked;
+				console.log(clicked);
+			}
+		} else {
+			if(!animating) {
+				camOut.start();
+				clicked = !clicked;
+				console.log(clicked);
+			}
+		}
 
 	}
+	var animBtn = document.getElementById("Anim");
+	container.addEventListener('mousedown', onDocumentMouseDown, false);
+	animBtn.addEventListener('click', onMouseDown, false );
 
-	window.addEventListener( 'mousemove', onMouseMove, false );
-
-//function to Highlight Faces of object, check why it doesn't cahnge the color;
-
-	function checkHighlight(){
-	// find intersections
-
-	// create a Ray with origin at the mouse position
-	//   and direction into the scene (camera direction)
-	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
-	vector.unproject(camera);
-	var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
-
-	// create an array containing all objects in the scene with which the ray intersects
-	var intersects = ray.intersectObjects( [sphere] );
-
-	// INTERSECTED = the object in the scene currently closest to the camera
-	//		and intersected by the Ray projected from the mouse position
-
-	// if there is one (or more) intersections
-	if ( intersects.length > 0 )
-	{	// case if mouse is not currently over an object
-		if(INTERSECTED==null){
-			INTERSECTED = intersects[ 0 ];
-			INTERSECTED.face.color.set( 0x000000 );
-			//INTERSECTED.object.material.emissive.setHex( 0xff0000 );
-		}
-		else{	// if thse mouse is over an object
-			INTERSECTED.face.color.set( 0xffffff );
-			INTERSECTED.object.geometry.colorsNeedUpdate = true;
-			INTERSECTED = intersects[ 0 ];
-			INTERSECTED.face.color.set( Math.random() * 0xffffff );
-			//INTERSECTED.object.material.emissive.setHex( 0xffffff );
-			console.log(INTERSECTED.object);
-		}
-		// upsdate mouseSphere coordinates and update colors
-		mouseSphereCoords = [INTERSECTED.point.x,INTERSECTED.point.y,INTERSECTED.point.z];
-		INTERSECTED.object.geometry.colorsNeedUpdate = true;
-
-	}
-	else // there are no intersections
+	function onDocumentMouseDown(event)
 	{
-		// restore previous intersection object (if it exists) to its original color
-		if ( INTERSECTED ){
-			INTERSECTED.face.color.set( 0x000000 );
-			// INTERSECTED.object.material.emissive.setHex( 0xff0000 );
-			INTERSECTED.object.geometry.colorsNeedUpdate = true;
-		}
-		// remove previous intersection object reference
-		//     by setting current intersection object to "nothing"
+		event.preventDefault();
 
-		INTERSECTED = null;
-		mouseSphereCoords = null;
+		container.addEventListener('mousemove', onDocumentMouseMove, false);
+		container.addEventListener('mouseup', onDocumentMouseUp, false);
 
+		mouseDown = true;
+
+		startPoint = {
+			x: event.clientX,
+			y: event.clientY
+		};
+
+		rotateStartPoint = rotateEndPoint = projectOnTrackball(0, 0);
 	}
-}
+
+	function onDocumentMouseMove(event)
+	{
+		deltaX = event.x - startPoint.x;
+		deltaY = event.y - startPoint.y;
+
+		handleRotation();
+
+		startPoint.x = event.x;
+		startPoint.y = event.y;
+
+		lastMoveTimestamp = new Date();
+	}
+
+	function onDocumentMouseUp(event)
+	{
+		if (new Date().getTime() - lastMoveTimestamp.getTime() > moveReleaseTimeDelta)
+		{
+			deltaX = event.x - startPoint.x;
+			deltaY = event.y - startPoint.y;
+		}
+
+		mouseDown = false;
+
+		container.removeEventListener('mousemove', onDocumentMouseMove, false);
+		container.removeEventListener('mouseup', onDocumentMouseUp, false);
+	}
+
+	function projectOnTrackball(touchX, touchY)
+	{
+		var mouseOnBall = new THREE.Vector3();
+
+		mouseOnBall.set(
+			clamp(touchX / windowHalfX, -1, 1), clamp(-touchY / windowHalfY, -1, 1),
+			0.0
+		);
+
+		var length = mouseOnBall.length();
+
+		if (length > 1.0)
+		{
+			mouseOnBall.normalize();
+		}
+		else
+		{
+			mouseOnBall.z = Math.sqrt(1.0 - length * length);
+		}
+
+		return mouseOnBall;
+	}
+
+	function rotateMatrix(rotateStart, rotateEnd)
+	{
+		var axis = new THREE.Vector3(),
+			quaternion = new THREE.Quaternion();
+
+		var angle = Math.acos(rotateStart.dot(rotateEnd) / rotateStart.length() / rotateEnd.length());
+
+		if (angle)
+		{
+			axis.crossVectors(rotateStart, rotateEnd).normalize();
+			angle *= rotationSpeed;
+			quaternion.setFromAxisAngle(axis, angle);
+		}
+		return quaternion;
+	}
+
+	function clamp(value, min, max)
+	{
+		return Math.min(Math.max(value, min), max);
+	}
 
 
 	// run the rendering loop
@@ -191,39 +276,56 @@
 		lastTimeMsec	= nowMsec
 		// call each update function
 
-		sphere.rotation.x += 0.005;
-		sphere.rotation.y += 0.005;
+		if (mouseDown && !clicked && !animating)
+		{
+			var drag = 0.95;
+			var minDelta = 0.05;
 
-		checkHighlight();
+			if (deltaX < -minDelta || deltaX > minDelta)
+			{
+				deltaX *= drag;
+			}
+			else
+			{
+				deltaX = 0;
+			}
 
-		//Mouse intersection
-		// raycaster.setFromCamera( mouse, camera );
-		// var intersects = raycaster.intersectObjects( scene.children );
-		//
-		// if ( intersects.length > 0 ) {
-		//
-		// 	if ( INTERSECTED != intersects[ 0 ].object ) {
-		//
-		// 		if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-		//
-		// 		INTERSECTED = intersects[0].object;
-		// 		console.log(INTERSECTED);
-		// 		INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-		// 		INTERSECTED.material.emissive.setHex( 0xffffff );	//cahnge color
-		//
-		// 	}
-		//
-		// } else {
-		//
-		// 	if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-		//
-		// 	INTERSECTED = null;
-		//
-		// }
+			if (deltaY < -minDelta || deltaY > minDelta)
+			{
+				deltaY *= drag;
+			}
+			else
+			{
+				deltaY = 0;
+			}
 
-		TWEEN.update();
+			handleRotation();
+		}
+
+		if(!mouseDown) {
+			sphere.rotation.x += 0.005;
+			sphere.rotation.y += 0.005;
+		}
+
+
+
 
 		renderer.render( scene, camera );
-	})
+
+		TWEEN.update();
+	});
+
+	var handleRotation = function()
+	{
+		rotateEndPoint = projectOnTrackball(deltaX, deltaY);
+
+		var rotateQuaternion = rotateMatrix(rotateStartPoint, rotateEndPoint);
+		curQuaternion = sphere.quaternion;
+		curQuaternion.multiplyQuaternions(rotateQuaternion, curQuaternion);
+		curQuaternion.normalize();
+		sphere.setRotationFromQuaternion(curQuaternion);
+
+		rotateEndPoint = rotateStartPoint;
+	};
 	</script>
 </html>
